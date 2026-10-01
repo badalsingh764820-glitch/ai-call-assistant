@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code nikalo
+        uses: actions/checkout@v4
+
+      - name: Zip kholo aur project dhoondo
+        run: |
+          rm -rf project
+          mkdir project
+          find . -maxdepth 1 -name "*.zip" -exec unzip -o -q {} -d project \;
+          find project -maxdepth 2 -name "*.zip" -exec unzip -o -q {} -d project \;
+          PROJ=$(find project -maxdepth 3 -name "settings.gradle" -printf "%h\n" | head -1)
+          echo "Project mila: $PROJ"
+          echo "PROJ=$PROJ" >> $GITHUB_ENV
+
+      - name: Java 17 lagao
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Android SDK lagao
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle setup karo
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      - name: APK banao
+        working-directory: ${{ env.PROJ }}
+        run: gradle :app:assembleDebug
+
+      - name: APK upload karo
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-call-assistant-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/app-debug.apk
